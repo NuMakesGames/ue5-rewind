@@ -6,11 +6,11 @@ AlignOperands: AlignAfterOperator
 AlignTrailingComments: true
 AllowAllArgumentsOnNextLine: true
 AllowAllParametersOfDeclarationOnNextLine: false
-AllowShortBlocksOnASingleLine: Empty
+AllowShortBlocksOnASingleLine: Always
 AllowShortCaseLabelsOnASingleLine: false
 AllowShortEnumsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: None
-AllowShortIfStatementsOnASingleLine: Never
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: WithoutElse
 AllowShortLambdasOnASingleLine: All
 AlwaysBreakAfterReturnType: None
 AlwaysBreakBeforeMultilineStrings: true
@@ -50,12 +50,14 @@ ExperimentalAutoDetectBinPacking: false
 FixNamespaceComments: true
 IncludeBlocks: Regroup
 IncludeCategories:
-  - Regex:           '.*\.generated\..*'
-    Priority:        3
-  - Regex:           '^<.*>'
+  - Regex:           'CoreMinimal.h'
     Priority:        1
-  - Regex:           '.*'
+  - Regex:           '.*\.generated\..*'
+    Priority:        4
+  - Regex:           '^<.*>'
     Priority:        2
+  - Regex:           '.*'
+    Priority:        3
 IndentAccessModifiers: false
 IndentCaseBlocks: false
 IndentCaseLabels: true
