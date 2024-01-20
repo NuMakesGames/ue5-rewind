@@ -14,24 +14,32 @@ ARewindGameMode::ARewindGameMode()
 
 void ARewindGameMode::StartGlobalRewind()
 {
+	TRACE_BOOKMARK(TEXT("ARewindGameMode::StartGlobalRewind"));
+
 	bIsGlobalRewinding = true;
 	OnGlobalRewindStarted.Broadcast();
 }
 
 void ARewindGameMode::StopGlobalRewind()
 {
+	TRACE_BOOKMARK(TEXT("ARewindGameMode::StopGlobalRewind"));
+
 	bIsGlobalRewinding = false;
 	OnGlobalRewindCompleted.Broadcast();
 }
 
 void ARewindGameMode::StartGlobalFastForward()
 {
+	TRACE_BOOKMARK(TEXT("ARewindGameMode::StartGlobalFastForward"));
+
 	bIsGlobalFastForwarding = true;
 	OnGlobalFastForwardStarted.Broadcast();
 }
 
 void ARewindGameMode::StopGlobalFastForward()
 {
+	TRACE_BOOKMARK(TEXT("ARewindGameMode::StopGlobalFastForward"));
+
 	bIsGlobalFastForwarding = false;
 	OnGlobalFastForwardCompleted.Broadcast();
 }
@@ -64,6 +72,29 @@ void ARewindGameMode::SetRewindSpeedFastest()
 void ARewindGameMode::ToggleTimeScrub()
 {
 	bIsGlobalTimeScrubbing = !bIsGlobalTimeScrubbing;
-	if (bIsGlobalTimeScrubbing) { OnGlobalTimeScrubStarted.Broadcast(); }
-	else { OnGlobalTimeScrubCompleted.Broadcast(); }
+	if (bIsGlobalTimeScrubbing)
+	{
+		TRACE_BOOKMARK(TEXT("ARewindGameMode::ToggleTimeScrub - Start Time Scrubbing"));
+		OnGlobalTimeScrubStarted.Broadcast();
+	}
+	else
+	{
+		TRACE_BOOKMARK(TEXT("ARewindGameMode::ToggleTimeScrub - Stop Time Scrubbing"));
+		OnGlobalTimeScrubCompleted.Broadcast();
+	}
+}
+
+void ARewindGameMode::ToggleGlobalTimelineVisualization()
+{
+	bIsGlobalTimelineVisualizationEnabled = !bIsGlobalTimelineVisualizationEnabled;
+	if (bIsGlobalTimelineVisualizationEnabled)
+	{
+		TRACE_BOOKMARK(TEXT("ARewindGameMode::ToggleGlobalTimelineVisualization - Enable Timeline Visualization"));
+		OnGlobalTimelineVisualizationEnabled.Broadcast();
+	}
+	else
+	{
+		TRACE_BOOKMARK(TEXT("ARewindGameMode::ToggleGlobalTimelineVisualization - Disable Timeline Visualization"));
+		OnGlobalTimelineVisualizationDisabled.Broadcast();
+	}
 }

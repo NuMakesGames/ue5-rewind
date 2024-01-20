@@ -2,6 +2,7 @@
 
 #include "RewindComponent.h"
 
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "DrawDebugHelpers.h"
 #include "Engine/StaticMeshActor.h"
@@ -13,13 +14,7 @@
 #include "GameFramework/PawnMovementComponent.h"
 #include "RewindCharacter.h"
 #include "RewindGameMode.h"
-
-bool GVisualizeRewindSnapshots = false;
-FAutoConsoleVariableRef CVarVisualizeRewindSnapshots(
-	TEXT("Rewind.VisualizeSnapshots"),
-	GVisualizeRewindSnapshots,
-	TEXT("Whether to visualize stored snapshots"),
-	ECVF_Cheat);
+#include "RewindVisualizationComponent.h"
 
 URewindComponent::URewindComponent()
 {
@@ -31,6 +26,8 @@ URewindComponent::URewindComponent()
 
 void URewindComponent::BeginPlay()
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(URewindComponent::BeginPlay);
+
 	Super::BeginPlay();
 
 	GameMode = Cast<ARewindGameMode>(GetWorld()->GetAuthGameMode());
@@ -44,6 +41,9 @@ void URewindComponent::BeginPlay()
 	// Grab owner's root component to manipulate physics during rewind
 	OwnerRootComponent = Cast<UPrimitiveComponent>(GetOwner()->GetRootComponent());
 
+	// Grab owner's rewind visualization component, if it exists
+	OwnerVisualizationComponent = GetOwner()->FindComponentByClass<URewindVisualizationComponent>();
+
 	// If movement snapshotting is enabled, grab the owner's movement component
 	ACharacter* Character = Cast<ACharacter>(GetOwner());
 	if (bSnapshotMovementVelocityAndMode)
@@ -54,9 +54,6 @@ void URewindComponent::BeginPlay()
 	// If configured to pause animations, grab the owner's skeletal mesh
 	if (bPauseAnimationDuringTimeScrubbing) { OwnerSkeletalMesh = Character ? Character->GetMesh() : nullptr; }
 
-	// Assign a random color for debug visualization
-	DebugColor = FColor::MakeRandomColor();
-
 	// Bind to rewind/time scrub start/complete events on the game mode
 	GameMode->OnGlobalRewindStarted.AddUniqueDynamic(this, &URewindComponent::OnGlobalRewindStarted);
 	GameMode->OnGlobalRewindCompleted.AddUniqueDynamic(this, &URewindComponent::OnGlobalRewindCompleted);
@@ -64,6 +61,11 @@ void URewindComponent::BeginPlay()
 	GameMode->OnGlobalFastForwardCompleted.AddUniqueDynamic(this, &URewindComponent::OnGlobalFastForwardCompleted);
 	GameMode->OnGlobalTimeScrubStarted.AddUniqueDynamic(this, &URewindComponent::OnGlobalTimeScrubStarted);
 	GameMode->OnGlobalTimeScrubCompleted.AddUniqueDynamic(this, &URewindComponent::OnGlobalTimeScrubCompleted);
+	
+	// Bind to timeline visualization events on the game mode
+	GameMode->OnGlobalTimelineVisualizationEnabled.AddUniqueDynamic(this, &URewindComponent::OnGlobalTimelineVisualizationEnabled);
+	GameMode->OnGlobalTimelineVisualizationDisabled.AddUniqueDynamic(this, &URewindComponent::OnGlobalTimelineVisualizationDisabled);
+	bIsVisualizingTimeline = GameMode->IsGlobalTimelineVisualizationEnabled();
 
 	// Preallocate the space required in the ring buffers
 	InitializeRingBuffers(GameMode->MaxRewindSeconds);
@@ -71,6 +73,8 @@ void URewindComponent::BeginPlay()
 
 void URewindComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(URewindComponent::TickComponent);
+
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	if (bIsRewinding) { PlaySnapshots(DeltaTime, true /*bRewinding*/); }
@@ -78,7 +82,7 @@ void URewindComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 	else if (bIsTimeScrubbing) { PauseTime(DeltaTime, bLastTimeManipulationWasRewind); }
 	else { RecordSnapshot(DeltaTime); }
 
-	DebugDrawSnapshots();
+	if (bIsVisualizingTimeline) { VisualizeTimeline(); }
 }
 
 void URewindComponent::SetIsRewindingEnabled(bool bEnabled)
@@ -186,6 +190,17 @@ void URewindComponent::OnGlobalTimeScrubCompleted()
 	}
 }
 
+void URewindComponent::OnGlobalTimelineVisualizationEnabled()
+{
+	bIsVisualizingTimeline = true;
+}
+
+void URewindComponent::OnGlobalTimelineVisualizationDisabled()
+{
+	bIsVisualizingTimeline = false;
+	if (OwnerVisualizationComponent) { OwnerVisualizationComponent->ClearInstances(); }
+}
+
 void URewindComponent::InitializeRingBuffers(float MaxRewindSeconds)
 {
 	// Figure out how many snapshots we need to store
@@ -232,6 +247,8 @@ void URewindComponent::InitializeRingBuffers(float MaxRewindSeconds)
 
 void URewindComponent::RecordSnapshot(float DeltaTime)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(URewindComponent::RecordSnapshot);
+
 	TimeSinceSnapshotsChanged += DeltaTime;
 
 	// Early out if last snapshot was taken within the desired snapshot cadence
@@ -283,6 +300,8 @@ void URewindComponent::EraseFutureSnapshots()
 
 void URewindComponent::PlaySnapshots(float DeltaTime, bool bRewinding)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(URewindComponent::PlaySnapshots);
+
 	UnpauseAnimation();
 
 	if (HandleInsufficientSnapshots()) { return; }
@@ -341,6 +360,8 @@ void URewindComponent::PlaySnapshots(float DeltaTime, bool bRewinding)
 
 void URewindComponent::PauseTime(float DeltaTime, bool bRewinding)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(URewindComponent::PauseTime);
+
 	if (HandleInsufficientSnapshots()) { return; }
 
 	if (bRewinding)
@@ -515,7 +536,7 @@ void URewindComponent::InterpolateAndApplySnapshots(bool bRewinding)
 	}
 }
 
-URewindComponent::FTransformAndVelocitySnapshot URewindComponent::BlendSnapshots(
+FTransformAndVelocitySnapshot URewindComponent::BlendSnapshots(
 	const FTransformAndVelocitySnapshot& A,
 	const FTransformAndVelocitySnapshot& B,
 	float Alpha)
@@ -528,7 +549,7 @@ URewindComponent::FTransformAndVelocitySnapshot URewindComponent::BlendSnapshots
 	return BlendedSnapshot;
 }
 
-URewindComponent::FMovementVelocityAndModeSnapshot URewindComponent::BlendSnapshots(
+FMovementVelocityAndModeSnapshot URewindComponent::BlendSnapshots(
 	const FMovementVelocityAndModeSnapshot& A,
 	const FMovementVelocityAndModeSnapshot& B,
 	float Alpha)
@@ -560,27 +581,9 @@ void URewindComponent::ApplySnapshot(const FMovementVelocityAndModeSnapshot& Sna
 	}
 }
 
-/*static*/ void URewindComponent::ToggleTimelineSplinesVisibility()
+void URewindComponent::VisualizeTimeline()
 {
-	GVisualizeRewindSnapshots = !GVisualizeRewindSnapshots;
-}
-
-void URewindComponent::DebugDrawSnapshots()
-{
-	if (!GVisualizeRewindSnapshots) { return; }
-
-	for (int i = 0; i < TransformAndVelocitySnapshots.Num(); ++i)
-	{
-		const FTransformAndVelocitySnapshot& Snapshot = TransformAndVelocitySnapshots[i];
-		FVector Location = Snapshot.Transform.GetLocation();
-		DrawDebugPoint(GetWorld(), Location, i > LatestSnapshotIndex ? 8.0f : 10.0f, DebugColor);
-
-		if (i != 0)
-		{
-			const FTransformAndVelocitySnapshot& PreviousSnapshot = TransformAndVelocitySnapshots[i - 1];
-			FVector PreviousLocation = PreviousSnapshot.Transform.GetLocation();
-			DrawDebugLine(
-				GetWorld(), PreviousLocation, Location, i > LatestSnapshotIndex ? FColor::White : DebugColor, false, -1.0f, 0, 2.0f);
-		}
-	}
+	TRACE_CPUPROFILER_EVENT_SCOPE(URewindComponent::VisualizeTimeline);
+	if (!OwnerVisualizationComponent || !bIsVisualizingTimeline) { return; }
+	OwnerVisualizationComponent->SetInstancesFromSnapshots(TransformAndVelocitySnapshots);
 }

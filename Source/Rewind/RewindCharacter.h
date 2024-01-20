@@ -16,6 +16,7 @@ class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
 class URewindComponent;
+class URewindVisualizationComponent;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
@@ -35,6 +36,10 @@ class ARewindCharacter : public ACharacter
 	/** Rewind component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rewind", meta = (AllowPrivateAccess = "true"))
 	URewindComponent* RewindComponent;
+
+	// Component for visualizing the rewind timeline
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rewind", meta = (AllowPrivateAccess = "true"))
+	URewindVisualizationComponent* RewindVisualizationComponent;
 
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -88,9 +93,9 @@ class ARewindCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* ToggleRewindPartipationAction;
 
-	/** Toggle Timeline Splines Input Action */
+	/** Toggle Timeline Visualization Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* ToggleTimelineSplinesAction;
+	UInputAction* ToggleTimelineVisualizationAction;
 
 public:
 	// Desired camera arm length during rewinding
@@ -146,7 +151,7 @@ protected:
 	void ToggleRewindParticipation(const FInputActionValue& Value);
 
 	/** Called when toggling timeline splines */
-	void ToggleTimelineSplines(const FInputActionValue& Value);
+	void ToggleTimelineVisualization(const FInputActionValue& Value);
 
 private:
 	// Game mode for driving global time manipulation operations

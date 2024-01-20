@@ -17,6 +17,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGlobalFastForwardCompleted);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGlobalTimeScrubStarted);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGlobalTimeScrubCompleted);
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGlobalTimelineVisualizationEnabled);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGlobalTimelineVisualizationDisabled);
+
 UCLASS(minimalapi)
 class ARewindGameMode : public AGameModeBase
 {
@@ -80,6 +83,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Rewind")
 	void ToggleTimeScrub();
 
+	// Toggles visualization of timeline on all actors with rewind components
+	UFUNCTION(BlueprintCallable, Category = "Rewind")
+	void ToggleGlobalTimelineVisualization();
+
 	// Event for when global rewinds start
 	UPROPERTY(BlueprintAssignable, Category = "Rewind")
 	FOnGlobalRewindStarted OnGlobalRewindStarted;
@@ -104,6 +111,14 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Rewind")
 	FOnGlobalTimeScrubCompleted OnGlobalTimeScrubCompleted;
 
+	// Event for when global timeline visualization is enabled
+	UPROPERTY(BlueprintAssignable, Category = "Rewind")
+	FOnGlobalTimelineVisualizationEnabled OnGlobalTimelineVisualizationEnabled;
+
+	// Event for when global timeline visualization is disabled
+	UPROPERTY(BlueprintAssignable, Category = "Rewind")
+	FOnGlobalTimelineVisualizationDisabled OnGlobalTimelineVisualizationDisabled;
+
 	// Desired length of longest rewind; used to compute the rewind buffer size
 	UPROPERTY(EditDefaultsOnly, Category = "Rewind")
 	float MaxRewindSeconds = 120.0f;
@@ -116,6 +131,15 @@ public:
 	// Returns whether the component is currently rewinding
 	UFUNCTION(BlueprintCallable, Category = "Rewind")
 	bool IsGlobalTimeScrubbing() const { return bIsGlobalTimeScrubbing; };
+
+private:
+	UPROPERTY(Transient, VisibleAnywhere, Category = "Rewind")
+	bool bIsGlobalTimelineVisualizationEnabled = false;
+
+public:
+	// Returns whether the timeline visualization is currently enabled
+	UFUNCTION(BlueprintCallable, Category = "Rewind")
+	bool IsGlobalTimelineVisualizationEnabled() const { return bIsGlobalTimelineVisualizationEnabled; };
 
 private:
 	UPROPERTY(Transient, VisibleAnywhere, Category = "Rewind")

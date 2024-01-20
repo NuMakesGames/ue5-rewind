@@ -1,5 +1,7 @@
 # Rewind
-This repository contains a C++ prototype project implementing time rewinding mechanics in Unreal Engine 5. Check out [this video](https://www.youtube.com/watch?v=Y0SQuojLbxQ) for an overview of the project.
+This repository contains a C++ prototype project implementing time rewinding mechanics in Unreal Engine 5. This project appears is discussed in two of my videos on YouTube:
+- [Rewinding Time in UE5](https://www.youtube.com/watch?v=Y0SQuojLbxQ) goes through an overview of the project
+- [Fix Performance Problems with Unreal Insights!](https://youtu.be/lfjG3z5VVIw) remedies a major performance problem in the initial implementation of snapshot visualization
 
 ## Running the project
 To load this project in your local editor, you first need to build the project from source. Check out my video on [setting up Visual Studio with UE5](https://youtu.be/HQDskHVw1to?si=ZjCnBW8VtGosY5xw) for a tutorial.
@@ -15,7 +17,7 @@ Demos from the videos are stored as World Partition Data Layers on the map. You 
 - **R**: Hold to rewind time; release to stop rewinding
 - **Left Control**: Toggle time scrubbing (freezes time)
 - **F**: Hold to fastforwaard time; only available while time scrubbing
-- **G**: Toggles visualization of snapshots (note this debug feature is currently quite slow with a large number of snapshots and will degrade performance)
+- **G**: Toggles visualization of snapshots
 - **1**: Sets rewind and fastforward speed to quarter real time
 - **2**: Sets rewind and fastforward speed to half real time
 - **3**: Sets rewind and fastforward speed to real time

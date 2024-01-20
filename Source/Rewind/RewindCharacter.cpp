@@ -13,6 +13,7 @@
 #include "InputActionValue.h"
 #include "RewindComponent.h"
 #include "RewindGameMode.h"
+#include "RewindVisualizationComponent.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -62,6 +63,10 @@ ARewindCharacter::ARewindCharacter()
 	RewindComponent->SnapshotFrequencySeconds = 1.0f / 30.0f;
 	RewindComponent->bSnapshotMovementVelocityAndMode = true;
 	RewindComponent->bPauseAnimationDuringTimeScrubbing = true;
+
+	// Setup a rewind visualization component that draws a static mesh instance for each snapshot
+	RewindVisualizationComponent = CreateDefaultSubobject<URewindVisualizationComponent>(TEXT("RewindVisualizationComponent"));
+	RewindVisualizationComponent->SetupAttachment(RootComponent);
 }
 
 void ARewindCharacter::BeginPlay()
@@ -137,7 +142,7 @@ void ARewindCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 		// Toggle Timeline Splines
 		EnhancedInputComponent->BindAction(
-			ToggleTimelineSplinesAction, ETriggerEvent::Started, this, &ARewindCharacter::ToggleTimelineSplines);
+			ToggleTimelineVisualizationAction, ETriggerEvent::Started, this, &ARewindCharacter::ToggleTimelineVisualization);
 	}
 	else
 	{
@@ -280,9 +285,10 @@ void ARewindCharacter::ToggleRewindParticipation(const FInputActionValue& Value)
 	RewindComponent->SetIsRewindingEnabled(!RewindComponent->IsRewindingEnabled());
 }
 
-void ARewindCharacter::ToggleTimelineSplines(const FInputActionValue& Value)
+void ARewindCharacter::ToggleTimelineVisualization(const FInputActionValue& Value)
 {
-	URewindComponent::ToggleTimelineSplinesVisibility();
+	check(GameMode);
+	if (GameMode) { GameMode->ToggleGlobalTimelineVisualization(); }
 }
 
 void ARewindCharacter::UpdateCamera()
