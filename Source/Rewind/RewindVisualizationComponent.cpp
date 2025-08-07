@@ -116,10 +116,10 @@ void URewindVisualizationComponent::SetInstancesFromSnapshots(const TRingBuffer<
 	// Mark the render state dirty after updating all instances
 	if (bUpdatedAnyInstances) { MarkRenderStateDirty(); }
 
-	// Remove any extra existing instances
-	for (; Index < CurrentInstanceCount; ++Index)
+	// Remove any extra existing instances (safe reverse loop)
+	for (int32 RemoveIndex = CurrentInstanceCount - 1; RemoveIndex >= Index; --RemoveIndex)
 	{
-		bool bResult = RemoveInstance(Index);
+		bool bResult = RemoveInstance(RemoveIndex);
 		check(bResult);
 	}
 }
